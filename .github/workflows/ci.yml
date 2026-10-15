@@ -1,20 +1,33 @@
 name: ci
 on: [push, pull_request]
 jobs:
-  m1-smoke:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
       - name: Start stack
-        run: docker compose up -d --build --wait --wait-timeout 90
+        run: docker compose up -d --build --wait --wait-timeout 120
       - name: Health
         run: curl -fsS localhost:8000/health
       - name: API tests
         run: docker compose exec -T api pytest -q
       - name: fake-payments tests
         run: docker compose run --rm --no-deps fake-payments pytest -q
+      - name: Scripts (invariant oracle tests, race, replay)
+        run: |
+          pip install -r scripts/requirements.txt pytest==8.3.4
+          pytest -q scripts
+          python scripts/race.py --mode naive --buyers 500 --stock 50
+          python scripts/race.py --mode atomic --buyers 500 --stock 50
+          python scripts/replay.py --repeats 20
+      - name: k6 smoke (10 VUs, 10 s; latency on shared runners is not meaningful)
+        run: |
+          docker compose exec -T postgres psql -U app -d shop -f - < load/seed.sql
+          VUS=10 DURATION=10s docker compose --profile load run --rm k6
+      - uses: actions/upload-artifact@v4
+        with: { name: load, path: results/load.json }
       - name: Logs on failure
         if: failure()
         run: docker compose logs --no-color
-      # TODO(M7): set up k6 (grafana/setup-k6-action), seed with scripts/seed.py, run `k6 run load/orders.js`,
-      # upload results/load.json as an artifact.

@@ -36,3 +36,19 @@ services:
     depends_on:
       postgres: { condition: service_healthy }
       fake-payments: { condition: service_started }
+
+  # load generator, only started on demand: docker compose --profile load run --rm k6
+  k6:
+    image: grafana/k6:2.3.0
+    profiles: ["load"]
+    environment:
+      BASE_URL: http://api:8000
+      OUT: /results/load.json
+      VUS: ${VUS:-50}
+      DURATION: ${DURATION:-30s}
+    volumes:
+      - ./load:/load:ro
+      - ./results:/results
+    command: ["run", "/load/orders.js"]
+    depends_on:
+      api: { condition: service_healthy }
