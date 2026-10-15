@@ -7,8 +7,9 @@ GET /charges/{key}  -> stored result or 404 (never seen). Used by the reconciler
 GET /charges        -> all charges, for scripts/check_invariants.py.
 POST /reset         -> forget everything (scripts/tests).
 Env (read per request, so tests can change them): FAIL_RATE, TIMEOUT_RATE, LATENCY_MS, TIMEOUT_SLEEP_S.
-A "timeout" charge is decided like any other (50% it really succeeded) and recorded BEFORE the delay:
-the client sees no answer, but the money may have moved. That is the whole point of PAYMENT_UNKNOWN.
+A "timeout" is one of two cases (50/50): the request is lost before executing (nothing recorded), or the
+charge is decided (50% succeeded) and recorded BEFORE the delay: the client sees no answer, but the money
+may have moved. The client cannot tell them apart; that is the whole point of PAYMENT_UNKNOWN.
 """
 import asyncio
 import os
@@ -45,6 +46,11 @@ async def create_charge(body: ChargeIn, idempotency_key: str = Header(...)):
         return JSONResponse(_public(existing), status_code=201 if existing["status"] == "succeeded" else 402)
 
     roll = random.random()
+    if roll < _f("TIMEOUT_RATE", 0) and random.random() < 0.5:
+        # timeout where the request never got executed: nothing recorded, the client just waits
+        await asyncio.sleep(_f("LATENCY_MS", 0) / 1000 + _f("TIMEOUT_SLEEP_S", 30))
+        return JSONResponse({"status": "gateway_timeout"}, status_code=504)
+
     timed_out = roll < _f("TIMEOUT_RATE", 0)
     declined = (not timed_out and roll < _f("TIMEOUT_RATE", 0) + _f("FAIL_RATE", 0)) or (timed_out and random.random() < 0.5)
     rec = {

@@ -40,11 +40,16 @@ def test_fail_rate_one_declines_and_is_remembered(c, monkeypatch):
     assert c.get("/charges/k1").json()["status"] == "declined"
 
 
-def test_timeout_records_charge_before_hanging(c, monkeypatch):
+def test_timeout_is_lost_or_recorded_before_hanging(c, monkeypatch):
     monkeypatch.setenv("TIMEOUT_RATE", "1")
     monkeypatch.setenv("TIMEOUT_SLEEP_S", "0")  # we cannot hang in a test; the record is what matters
-    c.post("/charges", json=B, headers=H)
-    assert c.get("/charges/k1").json()["status"] in ("succeeded", "declined")
+    seen = set()
+    for i in range(60):
+        r = c.post("/charges", json={**B, "order_id": i}, headers={"Idempotency-Key": str(i)})
+        got = c.get(f"/charges/{i}")
+        seen.add(got.json()["status"] if got.status_code == 200 else "lost")
+        assert (r.status_code == 504) == (got.status_code == 404)
+    assert seen == {"lost", "succeeded", "declined"}
 
 
 def test_unknown_key_404(c):

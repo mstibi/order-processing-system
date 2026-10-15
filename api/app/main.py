@@ -71,7 +71,11 @@ async def get_order(order_id: int):
 
 @app.post("/orders")
 async def create_order(body: OrderIn, idempotency_key: str = Header(min_length=1, max_length=200)):
-    request_hash = hashlib.sha256(body.model_dump_json().encode()).hexdigest()
+    items: dict[int, int] = {}
+    for it in body.items:  # same product twice -> one line
+        items[it.product_id] = items.get(it.product_id, 0) + it.qty
+    # fingerprint of what is bought, independent of item order in the JSON
+    request_hash = hashlib.sha256(json.dumps([body.customer_id, sorted(items.items())]).encode()).hexdigest()
 
     # 1. claim the key. Only one request can insert it; everyone else reads what is there.
     async with pool.connection() as conn:
@@ -89,7 +93,7 @@ async def create_order(body: OrderIn, idempotency_key: str = Header(min_length=1
             return JSONResponse({"error": "request_in_progress"}, status_code=409)
         return JSONResponse(saved["body"], status_code=saved["status_code"])  # replay the first answer
 
-    status_code, response = await place_order(body, idempotency_key)
+    status_code, response = await place_order(body.customer_id, items, idempotency_key)
 
     # 6. save the answer, so a retry with this key gets exactly the same response
     async with pool.connection() as conn:
@@ -99,15 +103,11 @@ async def create_order(body: OrderIn, idempotency_key: str = Header(min_length=1
     return JSONResponse(response, status_code=status_code)
 
 
-async def place_order(body: OrderIn, idempotency_key: str) -> tuple[int, dict]:
-    items: dict[int, int] = {}
-    for it in body.items:  # same product twice -> one line
-        items[it.product_id] = items.get(it.product_id, 0) + it.qty
-
+async def place_order(customer_id: int, items: dict[int, int], idempotency_key: str) -> tuple[int, dict]:
     # 2. stock + PENDING order, one short transaction
     try:
         async with pool.connection() as conn:
-            order_id, total = await orders.reserve(conn, body.customer_id, items)
+            order_id, total = await orders.reserve(conn, customer_id, items)
     except orders.OutOfStock as e:
         return 409, {"error": "out_of_stock", "product_id": e.args[0]}
     except Exception:
