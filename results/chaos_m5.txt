@@ -1,0 +1,18 @@
+--- run 1 (FAIL_RATE=0.2 TIMEOUT_RATE=0.1)
+orders=1000 kills=0 seconds=16.2
+client saw: {'PAID': 683, 'FAILED': 172, 'PAYMENT_UNKNOWN': 98, 'out_of_stock': 47}
+orders: {'FAILED': 244, 'PAID': 709} charges_succeeded: 709
+duplicate_charges=0 oversell=0 unknown=0 paid_without_charge=0 charged_not_paid=0
+INVARIANTS OK
+--- run 2 (FAIL_RATE=0.2 TIMEOUT_RATE=0.1)
+orders=1000 kills=0 seconds=14.9
+client saw: {'PAID': 658, 'FAILED': 188, 'PAYMENT_UNKNOWN': 99, 'out_of_stock': 55}
+orders: {'FAILED': 264, 'PAID': 681} charges_succeeded: 681
+duplicate_charges=0 oversell=0 unknown=0 paid_without_charge=0 charged_not_paid=0
+INVARIANTS OK
+--- run 3 (FAIL_RATE=0.2 TIMEOUT_RATE=0.1)
+orders=1000 kills=0 seconds=16.4
+client saw: {'PAID': 675, 'FAILED': 202, 'PAYMENT_UNKNOWN': 94, 'out_of_stock': 29}
+orders: {'FAILED': 273, 'PAID': 698} charges_succeeded: 698
+duplicate_charges=0 oversell=0 unknown=0 paid_without_charge=0 charged_not_paid=0
+INVARIANTS OK
