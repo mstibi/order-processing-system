@@ -1,0 +1,21 @@
+--- run 1 (FAIL_RATE=0.2 TIMEOUT_RATE=0.1, hard kill of the API process every 200 orders)
+orders=1000 kills=4 seconds=30.3
+client saw: {'PAID': 678, 'FAILED': 191, 'gave_up': 56, 'PAYMENT_UNKNOWN': 39, 'out_of_stock': 36}
+orders: {'CANCELLED': 25, 'FAILED': 234, 'PAID': 704} charges_succeeded: 704
+duplicate_charges=0 oversell=0 unknown=0 paid_without_charge=0 charged_not_paid=0
+INVARIANTS OK
+api restarts so far (stack log): 4
+--- run 2 (FAIL_RATE=0.2 TIMEOUT_RATE=0.1, hard kill of the API process every 200 orders)
+orders=1000 kills=4 seconds=27.0
+client saw: {'PAID': 652, 'FAILED': 193, 'gave_up': 88, 'out_of_stock': 51, 'PAYMENT_UNKNOWN': 16}
+orders: {'CANCELLED': 44, 'FAILED': 222, 'PAID': 681} charges_succeeded: 681
+duplicate_charges=0 oversell=0 unknown=0 paid_without_charge=0 charged_not_paid=0
+INVARIANTS OK
+api restarts so far (stack log): 8
+--- run 3 (FAIL_RATE=0.2 TIMEOUT_RATE=0.1, hard kill of the API process every 200 orders)
+orders=1000 kills=4 seconds=25.6
+client saw: {'PAID': 649, 'FAILED': 192, 'out_of_stock': 69, 'gave_up': 68, 'PAYMENT_UNKNOWN': 22}
+orders: {'CANCELLED': 32, 'FAILED': 224, 'PAID': 675} charges_succeeded: 675
+duplicate_charges=0 oversell=0 unknown=0 paid_without_charge=0 charged_not_paid=0
+INVARIANTS OK
+api restarts so far (stack log): 12

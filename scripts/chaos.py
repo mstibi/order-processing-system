@@ -71,7 +71,7 @@ async def main(n: int, concurrency: int, products: int, stock: int, kill_every: 
     async def worker(i: int) -> str:
         async with sem:
             if kill_every and i and i % kill_every == 0:  # crash the API while ~concurrency orders are in flight
-                kills.append(asyncio.create_task(asyncio.to_thread(subprocess.run, restart_cmd, shell=True, cwd=ROOT)))
+                kills.append(asyncio.create_task(asyncio.to_thread(subprocess.run, restart_cmd, shell=True, cwd=ROOT, check=True)))
             return await one_order(http, i, product_ids)
 
     start = time.perf_counter()
