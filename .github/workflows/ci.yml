@@ -13,6 +13,8 @@ jobs:
         run: curl -fsS localhost:8000/health
       - name: API tests
         run: docker compose exec -T api pytest -q
+      - name: Demo dashboard tests
+        run: docker compose exec -T demo pytest -q demo
       - name: fake-payments tests
         run: docker compose run --rm --no-deps fake-payments pytest -q
       - name: Scripts (invariant oracle tests, race, replay)

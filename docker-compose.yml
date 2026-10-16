@@ -5,7 +5,7 @@ services:
       POSTGRES_USER: app
       POSTGRES_PASSWORD: app
       POSTGRES_DB: shop
-    ports: ["5432:5432"]
+    ports: ["127.0.0.1:5432:5432"]  # localhost only
     volumes:
       # schema.sql runs only on first start of an empty volume: `docker compose down -v` to re-apply
       - ./db/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
@@ -21,7 +21,7 @@ services:
       FAIL_RATE: ${FAIL_RATE:-0}
       TIMEOUT_RATE: ${TIMEOUT_RATE:-0}
       LATENCY_MS: ${LATENCY_MS:-0}
-    ports: ["9000:9000"]
+    ports: ["127.0.0.1:9000:9000"]  # localhost only
 
   api:
     build: ./api
@@ -30,12 +30,25 @@ services:
       PAYMENTS_URL: http://fake-payments:9000
       PAYMENTS_TIMEOUT_S: ${PAYMENTS_TIMEOUT_S:-3}
       PENDING_STALE_S: ${PENDING_STALE_S:-60}
-    ports: ["8000:8000"]
+    ports: ["127.0.0.1:8000:8000"]  # localhost only
     volumes:
       - ./api:/app   # dev: tests/code edits visible without rebuild (`docker compose restart api` to reload code)
     depends_on:
       postgres: { condition: service_healthy }
       fake-payments: { condition: service_started }
+
+  # demo dashboard on http://localhost:8080 (demo-only endpoints: never expose beyond localhost)
+  demo:
+    build: { context: ., dockerfile: demo/Dockerfile }
+    environment:
+      DATABASE_URL: postgresql://app:app@postgres:5432/shop
+      API_URL: http://api:8000
+      PAYMENTS_URL: http://fake-payments:9000
+    ports: ["127.0.0.1:8080:8080"]
+    volumes:
+      - ./demo:/app/demo   # dev: index.html edits are live; `docker compose restart demo` for Python edits
+    depends_on:
+      api: { condition: service_healthy }
 
   # load generator, only started on demand: docker compose --profile load run --rm k6
   k6:

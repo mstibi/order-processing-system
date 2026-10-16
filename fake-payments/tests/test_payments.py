@@ -54,3 +54,10 @@ def test_timeout_is_lost_or_recorded_before_hanging(c, monkeypatch):
 
 def test_unknown_key_404(c):
     assert c.get("/charges/nope").status_code == 404
+
+
+def test_config_changes_rates_at_runtime(c, monkeypatch):
+    monkeypatch.setenv("FAIL_RATE", "0")  # registers the var so monkeypatch restores it afterwards
+    assert c.post("/config", json={"FAIL_RATE": 1}).json() == {"FAIL_RATE": 0, "TIMEOUT_RATE": 0}
+    assert c.post("/charges", json=B, headers=H).status_code == 402
+    assert c.post("/config", json={"FAIL_RATE": 2}).status_code == 422  # rates are 0..1

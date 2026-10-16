@@ -4,6 +4,24 @@ An order API that, under heavy concurrency and when things crash, **never charge
 
 FastAPI + PostgreSQL 16 + psycopg 3 (hand-written SQL, no ORM) + a fake Stripe (`fake-payments`) that fails, times out and remembers idempotency keys.
 
+## Demo dashboard
+
+`docker compose up -d`, then open **http://localhost:8080**. A single page (plain HTML/JS/CSS, no build, works offline) where anyone can click through what this project proves; every button runs the real scripts against the real stack.
+
+| Demo | What you click | What you see (real runs, 2026-10-16) |
+|---|---|---|
+| 1. Overselling | 1000 buyers, 100 in stock: Naive / Atomic UPDATE / SELECT FOR UPDATE | naive sold **1000 of 100** (DB still showed 74-85 left); atomic and lock sold exactly 100 in 0.65-0.92 s |
+| 2. Same click, many times | the same order 50x with one Idempotency-Key | 26x 201 + 24x 409 "still processing", **orders=1 charges=1**, same key with another body: 422 |
+| 3. When payments fail | sliders for decline / timeout rate, 100-500 orders | 500 orders at 20% declined + 40% timeouts: 203 first got PAYMENT_UNKNOWN, after the reconciler 253 PAID / 247 FAILED, `duplicate_charges=0 oversell=0 unknown=0` |
+| Live | recent orders table, refreshed every 3 s | status of each order as it changes |
+
+<p>
+<img src="docs/img/demo-oversell-desktop.jpg" alt="Demo 1 at desktop width: naive sold 1000 of 100, atomic and SELECT FOR UPDATE sold exactly 100" width="560">
+<img src="docs/img/demo-payments-phone-dark.jpg" alt="Demo 3 at phone width in dark mode: order statuses and all invariant checks green" width="220">
+</p>
+
+The `demo` service (`demo/main.py`) reuses `scripts/race.py`, `replay.py`, `chaos.one_order` and `check_invariants.check`; it does not touch the order logic. Each demo creates and later deletes only its own `demo-*` products, one demo runs at a time, and all ports are bound to 127.0.0.1. If a service is down, its status pill turns red and the demo shows which service is not answering. Tests: `docker compose exec demo pytest -q demo`.
+
 ## Results
 
 All numbers below are from real runs with `docker compose` (Docker Desktop 29.8.2, Postgres 16, one PC: Ryzen 5 7600X, 32 GB, Windows 11). Raw output is in `results/`. The earlier no-Docker numbers (`scripts/local_stack.py`) are kept in `results/local/` as a fallback.
@@ -90,9 +108,10 @@ sequenceDiagram
 ## Run it
 
 ```bash
-docker compose up -d                       # postgres + fake-payments + api on :8000
+docker compose up -d                       # postgres + fake-payments + api on :8000 + demo on :8080
 curl localhost:8000/health                 # {"status":"ok"}
 docker compose exec api pytest             # API tests (they wipe the DB)
+docker compose exec demo pytest -q demo    # demo endpoint tests (only touch demo-* data)
 
 pip install -r scripts/requirements.txt    # scripts run on the host
 python scripts/race.py --mode naive --buyers 1000 --stock 100      # also: atomic, for_update

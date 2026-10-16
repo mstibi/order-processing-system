@@ -23,7 +23,8 @@ from app.orders import TAKE, OutOfStock, reserve  # noqa: E402
 DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://app:app@localhost:5432/shop")
 
 
-async def main(mode: str, buyers: int, stock: int, conns: int) -> None:
+async def run(mode: str, buyers: int, stock: int, conns: int) -> dict:
+    """One race; returns the numbers (also used by the demo dashboard, demo/main.py)."""
     # timeout=600: all buyers queue for `conns` connections at once; the 30 s default is too short
     # when every round trip goes through Docker Desktop's port forwarding
     async with AsyncConnectionPool(DATABASE_URL, min_size=conns, max_size=conns, timeout=600,
@@ -57,8 +58,15 @@ async def main(mode: str, buyers: int, stock: int, conns: int) -> None:
                 await conn.execute("DELETE FROM orders WHERE id = ANY(%s)", [ids])
                 await conn.execute("DELETE FROM products WHERE id = %s", [product_id])
 
-    print(f"mode={mode} buyers={buyers} stock_before={stock} sold={sold} stock={stock_left} "
-          f"oversold={max(0, sold - stock)} lost_updates={stock_left - (stock - sold)} ok_answers={sum(results)} time={seconds:.2f}s conns={conns}")
+    return {"mode": mode, "buyers": buyers, "stock_before": stock, "sold": sold, "stock": stock_left,
+            "oversold": max(0, sold - stock), "lost_updates": stock_left - (stock - sold),
+            "ok_answers": sum(results), "time": seconds, "conns": conns}
+
+
+async def main(mode: str, buyers: int, stock: int, conns: int) -> None:
+    r = await run(mode, buyers, stock, conns)
+    print(f"mode={r['mode']} buyers={r['buyers']} stock_before={r['stock_before']} sold={r['sold']} stock={r['stock']} "
+          f"oversold={r['oversold']} lost_updates={r['lost_updates']} ok_answers={r['ok_answers']} time={r['time']:.2f}s conns={r['conns']}")
 
 
 if __name__ == "__main__":

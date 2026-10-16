@@ -6,6 +6,7 @@ POST /charges  header Idempotency-Key, body {"order_id": int, "amount_cents": in
 GET /charges/{key}  -> stored result or 404 (never seen). Used by the reconciler.
 GET /charges        -> all charges, for scripts/check_invariants.py.
 POST /reset         -> forget everything (scripts/tests).
+POST /config        -> {"FAIL_RATE": 0.2, "TIMEOUT_RATE": 0.1} change rates at runtime (demo dashboard); returns the old ones.
 Env (read per request, so tests can change them): FAIL_RATE, TIMEOUT_RATE, LATENCY_MS, TIMEOUT_SLEEP_S.
 A "timeout" is one of two cases (50/50): the request is lost before executing (nothing recorded), or the
 charge is decided (50% succeeded) and recorded BEFORE the delay: the client sees no answer, but the money
@@ -17,7 +18,7 @@ import random
 
 from fastapi import FastAPI, Header, HTTPException
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 app = FastAPI(title="fake-payments")
 charges: dict[str, dict] = {}
@@ -82,6 +83,19 @@ def list_charges():
 def reset():
     charges.clear()
     return {"status": "ok"}
+
+
+class Rates(BaseModel):
+    FAIL_RATE: float | None = Field(None, ge=0, le=1)
+    TIMEOUT_RATE: float | None = Field(None, ge=0, le=1)
+
+
+@app.post("/config")
+def set_rates(body: Rates):
+    old = {k: _f(k, 0) for k in ("FAIL_RATE", "TIMEOUT_RATE")}
+    for k, v in body.model_dump(exclude_none=True).items():
+        os.environ[k] = str(v)  # read per request, so this takes effect on the next charge
+    return old
 
 
 def _public(rec: dict) -> dict:

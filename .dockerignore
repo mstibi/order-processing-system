@@ -1,0 +1,9 @@
+# only the demo image builds from the project root
+.git
+.venv
+.pgdata
+.pytest_cache
+results
+load
+docs
+**/__pycache__

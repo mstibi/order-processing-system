@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Order System Demo</title>
+<meta name="description" content="Click-through demo: an order API that never oversells and never charges twice, even when things crash.">
+<style>
+:root {
+  --bg: #f7f7f9; --surface: #ffffff; --text: #16161d; --muted: #5d5d6b; --border: #e3e3ea;
+  --accent: #4f46e5; --accent-text: #ffffff; --accent-soft: #eef0ff;
+  --ok: #157f3b; --ok-soft: #e6f6ec; --bad: #c02929; --bad-soft: #fdeaea; --warn: #a15c00; --warn-soft: #fff3e0;
+  --grey-soft: #eeeef2;
+  --radius: 14px;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f0f14; --surface: #191920; --text: #ececf1; --muted: #a2a2b2; --border: #2c2c36;
+    --accent: #8b87ff; --accent-text: #0f0f14; --accent-soft: #24234a;
+    --ok: #4ccf7c; --ok-soft: #15301f; --bad: #ff7676; --bad-soft: #3a1a1c; --warn: #f5b04c; --warn-soft: #3a2a12;
+    --grey-soft: #26262e;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+main { max-width: 980px; margin: 0 auto; padding: 48px 16px 64px; }
+h1, h2, h3 { line-height: 1.2; margin: 0; }
+h1 { font-size: clamp(1.9rem, 4.5vw, 2.7rem); letter-spacing: -0.02em; }
+h2 { font-size: 1.45rem; letter-spacing: -0.01em; }
+h3 { font-size: 1rem; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+.eyebrow { font-size: .78rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+dfn { font-style: normal; font-weight: 600; }
+.term { display: block; margin-top: 10px; padding: 10px 14px; border-left: 3px solid var(--accent);
+        background: var(--accent-soft); border-radius: 0 8px 8px 0; font-size: .93rem; }
+code { font: .88em ui-monospace, "Cascadia Code", Consolas, monospace; background: var(--grey-soft); padding: 1px 5px; border-radius: 5px; }
+
+/* hero */
+.hero { display: grid; gap: 18px; margin-bottom: 40px; }
+.lead { font-size: 1.2rem; max-width: 46ch; }
+.pills { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; padding: 0; margin: 0; }
+.pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px;
+        background: var(--surface); border: 1px solid var(--border); font-size: .9rem; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); }
+.pill[data-state="up"] .dot { background: var(--ok); }
+.pill[data-state="down"] { border-color: var(--bad); color: var(--bad); }
+.pill[data-state="down"] .dot { background: var(--bad); }
+
+/* cards */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+        padding: clamp(20px, 4vw, 32px); margin-bottom: 24px; }
+.card > header { display: grid; gap: 8px; margin-bottom: 20px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+/* subgrid: title, text, button and result line up across the three cards */
+.option { border: 1px solid var(--border); border-radius: 12px; padding: 16px; display: grid; grid-row: span 4; grid-template-rows: subgrid; gap: 10px; align-content: start; }
+.option .result:empty { display: none; }
+.option .result { border-top: 1px solid var(--border); padding-top: 14px; }
+.stat { display: flex; justify-content: space-between; gap: 8px; font-size: .9rem; }
+.stat b { font-variant-numeric: tabular-nums; }
+.option p { font-size: .92rem; }
+
+/* controls */
+button {
+  font: inherit; font-weight: 600; cursor: pointer; border: 0; border-radius: 10px; padding: 10px 16px;
+  background: var(--accent); color: var(--accent-text); min-height: 44px;
+}
+button.secondary { background: transparent; color: var(--accent); border: 1.5px solid var(--accent); }
+button:disabled { opacity: .55; cursor: progress; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.controls { display: flex; flex-wrap: wrap; gap: 16px 24px; align-items: end; margin-bottom: 18px; }
+.field { display: grid; gap: 6px; font-size: .92rem; }
+.field output { font-weight: 700; }
+select { font: inherit; padding: 9px 10px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); color: var(--text); min-height: 44px; }
+input[type=range] { width: 200px; accent-color: var(--accent); }
+
+/* results */
+.result { min-height: 24px; }
+.big { display: flex; flex-wrap: wrap; gap: 10px 28px; align-items: baseline; }
+.num { font-size: 2.3rem; font-weight: 750; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; }
+.num small { display: block; font-size: .8rem; font-weight: 500; color: var(--muted); letter-spacing: 0; margin-top: 4px; }
+.verdict { display: inline-flex; gap: 8px; align-items: center; font-weight: 650; padding: 6px 12px; border-radius: 8px; margin-top: 12px; }
+.verdict.ok { background: var(--ok-soft); color: var(--ok); }
+.verdict.bad { background: var(--bad-soft); color: var(--bad); }
+.verdict.wait { background: var(--warn-soft); color: var(--warn); }
+.note { font-size: .88rem; color: var(--muted); margin-top: 8px; }
+.error { background: var(--bad-soft); color: var(--bad); padding: 10px 14px; border-radius: 10px; font-size: .93rem; }
+.progress { display: flex; gap: 10px; align-items: center; color: var(--muted); font-size: .93rem; }
+.spinner { width: 18px; height: 18px; border-radius: 50%; border: 2.5px solid var(--border); border-top-color: var(--accent); animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 3s; } }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; padding: 0; margin: 14px 0 0; }
+.chips li { background: var(--grey-soft); border-radius: 8px; padding: 6px 10px; font-size: .9rem; }
+.two { display: grid; grid-template-columns: 1.2fr 1fr; gap: 24px; margin-top: 8px; }
+
+/* status bar */
+.bar { display: flex; height: 14px; border-radius: 999px; overflow: hidden; background: var(--grey-soft); margin: 10px 0 12px; }
+.bar span { transition: width .4s; }
+.legend { display: grid; gap: 6px; list-style: none; padding: 0; margin: 0; font-size: .93rem; }
+.legend li { display: flex; gap: 10px; align-items: center; }
+.legend b { margin-left: auto; font-variant-numeric: tabular-nums; }
+.sw { width: 12px; height: 12px; border-radius: 3px; flex: none; }
+.checks { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.checks li { display: grid; grid-template-columns: 26px 1fr; gap: 4px 8px; align-items: start; }
+.mark { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: .8rem; font-weight: 800;
+        background: var(--grey-soft); color: var(--muted); }
+.checks li[data-state="ok"] .mark { background: var(--ok-soft); color: var(--ok); }
+.checks li[data-state="bad"] .mark { background: var(--bad-soft); color: var(--bad); }
+.checks small { grid-column: 2; color: var(--muted); font-size: .85rem; }
+
+/* status colours (also used in the table) */
+.s-PAID { --c: var(--ok); --cs: var(--ok-soft); }
+.s-FAILED { --c: var(--bad); --cs: var(--bad-soft); }
+.s-PAYMENT_UNKNOWN { --c: var(--warn); --cs: var(--warn-soft); }
+.s-PENDING, .s-CANCELLED, .s-out_of_stock { --c: var(--muted); --cs: var(--grey-soft); }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: .78rem; font-weight: 650; background: var(--cs); color: var(--c); white-space: nowrap; }
+
+/* table */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+th { font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 600; }
+td.num-cell { text-align: right; font-variant-numeric: tabular-nums; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+footer { color: var(--muted); font-size: .88rem; margin-top: 32px; }
+
+@media (max-width: 760px) {
+  main { padding-top: 32px; }
+  .grid3, .two { grid-template-columns: 1fr; }
+  .num { font-size: 2rem; }
+  input[type=range] { width: 100%; }
+  .controls .field { width: 100%; }
+  .controls button { width: 100%; }
+  .hide-sm { display: none; }
+  th, td { padding: 10px 5px; }
+  td.items { white-space: normal; }
+}
+</style>
+</head>
+<body>
+<main>
+  <section class="hero" aria-labelledby="title">
+    <p class="eyebrow">Order processing system · live demo</p>
+    <h1 id="title">An online shop backend that stays correct under pressure.</h1>
+    <p class="lead">It <strong>never sells more than it has in stock</strong> and <strong>never charges a customer twice</strong>, even when 1000 people click at once or the payment provider stops answering.</p>
+    <p class="muted">Every button below runs a real test against the real system (API, PostgreSQL database and a fake payment provider) and shows the numbers that come back.</p>
+    <ul class="pills" aria-label="Service status">
+      <li class="pill" id="pill-api" data-state="unknown"><span class="dot" aria-hidden="true"></span><span>API: checking…</span></li>
+      <li class="pill" id="pill-payments" data-state="unknown"><span class="dot" aria-hidden="true"></span><span>Payments: checking…</span></li>
+      <li class="pill" id="pill-database" data-state="unknown"><span class="dot" aria-hidden="true"></span><span>Database: checking…</span></li>
+    </ul>
+    <div id="status-error" role="alert"></div>
+  </section>
+
+  <!-- Demo 1 -->
+  <section class="card" aria-labelledby="d1">
+    <header>
+      <p class="eyebrow">Demo 1</p>
+      <h2 id="d1">Overselling</h2>
+      <p>A product has <strong>100</strong> items in stock. <strong>1000</strong> buyers press “Buy” at the same moment. Each one should get an item only if one is left.</p>
+      <p class="term"><dfn>Race condition</dfn>: two buyers both read “1 left” before either of them writes “0 left”, so both buy it. <dfn>Overselling</dfn> is the result: the shop sells items it does not have.</p>
+    </header>
+    <div class="grid3">
+      <div class="option">
+        <h3>Naive</h3>
+        <p class="muted">Read the stock, check it in code, then write the new number. Looks fine, has the race condition.</p>
+        <button data-mode="naive" class="secondary">Run naive</button>
+        <div class="result" id="r1-naive" aria-live="polite"></div>
+      </div>
+      <div class="option">
+        <h3>Atomic UPDATE</h3>
+        <p class="muted">Check and subtract in one database step: <code>stock - 1 … WHERE stock ≥ 1</code>. What the API uses.</p>
+        <button data-mode="atomic">Run atomic</button>
+        <div class="result" id="r1-atomic" aria-live="polite"></div>
+      </div>
+      <div class="option">
+        <h3>SELECT FOR UPDATE</h3>
+        <p class="muted">Lock the product row first, so other buyers wait in line, then check and subtract.</p>
+        <button data-mode="for_update">Run with lock</button>
+        <div class="result" id="r1-for_update" aria-live="polite"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Demo 2 -->
+  <section class="card" aria-labelledby="d2">
+    <header>
+      <p class="eyebrow">Demo 2</p>
+      <h2 id="d2">Same click, many times</h2>
+      <p>People double-click, and phones resend requests on bad Wi-Fi. Here one customer sends the <em>same</em> order many times: half at the same instant, half one after another.</p>
+      <p class="term"><dfn>Idempotency key</dfn>: a unique ID the client attaches to “this one purchase”. The server remembers it, so every repeat gets the first answer back instead of creating a new order and a new charge.</p>
+    </header>
+    <div class="controls">
+      <label class="field">Times to send the order
+        <select id="repeats"><option>10</option><option selected>50</option><option>200</option></select>
+      </label>
+      <button id="run2">Send the same order</button>
+    </div>
+    <div class="result" id="r2" aria-live="polite"></div>
+  </section>
+
+  <!-- Demo 3 -->
+  <section class="card" aria-labelledby="d3">
+    <header>
+      <p class="eyebrow">Demo 3</p>
+      <h2 id="d3">When payments fail</h2>
+      <p>The payment provider sometimes declines a card, and sometimes does not answer at all. Many customers order at once; when a request gets no answer, the client retries it with the same idempotency key.</p>
+      <p class="term">A <dfn>timeout</dfn> does not mean the payment failed: the money may already have moved. So the order is marked <span class="badge s-PAYMENT_UNKNOWN">PAYMENT_UNKNOWN</span>, and the <dfn>reconciler</dfn>, a background job that runs every 5 seconds, asks the provider what really happened and fixes the order.</p>
+    </header>
+    <div class="controls">
+      <div class="field">
+        <label for="fail">Cards declined: <output id="fail-out" for="fail">20%</output></label>
+        <input type="range" id="fail" min="0" max="50" step="5" value="20">
+      </div>
+      <div class="field">
+        <label for="timeout">No answer (timeout): <output id="timeout-out" for="timeout">10%</output></label>
+        <input type="range" id="timeout" min="0" max="50" step="5" value="10">
+      </div>
+      <label class="field">Orders
+        <select id="orders"><option>100</option><option selected>200</option><option>500</option></select>
+      </label>
+      <button id="run3">Run orders</button>
+    </div>
+    <div class="result" id="r3" aria-live="polite"></div>
+  </section>
+
+  <!-- Recent orders -->
+  <section class="card" aria-labelledby="d4">
+    <header>
+      <p class="eyebrow">Live</p>
+      <h2 id="d4">Recent orders</h2>
+      <p class="muted">The newest orders in the database, refreshed every 3 seconds.
+        <span class="badge s-PAID">PAID</span> charged once ·
+        <span class="badge s-FAILED">FAILED</span> declined, stock returned ·
+        <span class="badge s-PAYMENT_UNKNOWN">PAYMENT_UNKNOWN</span> waiting for the reconciler ·
+        <span class="badge s-CANCELLED">CANCELLED</span> never charged, stock returned.</p>
+    </header>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th scope="col">Order</th><th scope="col">Status</th><th scope="col">Items</th><th scope="col" class="num-cell">Total</th><th scope="col" class="hide-sm">Created</th></tr></thead>
+        <tbody id="orders-body"><tr><td colspan="5" class="muted">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    FastAPI · PostgreSQL 16 · hand-written SQL · a fake payment provider that fails on purpose.
+    The API itself is on <code>localhost:8000/docs</code>. This page and its endpoints only listen on localhost.
+  </footer>
+</main>
+
+<script>
+"use strict";
+const $ = (s) => document.querySelector(s);
+const esc = (v) => String(v).replace(/[&<>"']/g, (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+const fmt = (n) => Number(n).toLocaleString("en-US");
+const STATUS_TEXT = {
+  PAID: "Paid", FAILED: "Declined", PAYMENT_UNKNOWN: "Payment unknown", PENDING: "Pending", CANCELLED: "Cancelled",
+};
+
+async function api(method, path) {
+  let r;
+  try { r = await fetch(path, {method}); }
+  catch { throw new Error("Cannot reach the demo service on localhost:8080. Is `docker compose up` running?"); }
+  const body = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    const d = body.detail;
+    throw new Error(typeof d === "string" ? d : Array.isArray(d) ? d.map((e) => e.msg).join("; ") : `Request failed (${r.status})`);
+  }
+  return body;
+}
+
+// Disables all demo buttons and shows a spinner with a running timer until `work` finishes.
+async function running(box, label, work) {
+  const buttons = document.querySelectorAll("main button");
+  buttons.forEach((b) => (b.disabled = true));
+  const t0 = performance.now();
+  box.innerHTML = `<div class="progress"><span class="spinner" aria-hidden="true"></span><span>${esc(label)} <span class="t">0.0</span> s</span></div>`;
+  const tick = setInterval(() => { const t = box.querySelector(".t"); if (t) t.textContent = ((performance.now() - t0) / 1000).toFixed(1); }, 100);
+  try { await work(); }
+  catch (e) { box.innerHTML = `<p class="error" role="alert">${esc(e.message)}</p>`; }
+  finally { clearInterval(tick); buttons.forEach((b) => (b.disabled = false)); loadOrders(); }
+}
+
+const verdict = (ok, text) => `<p class="verdict ${ok ? "ok" : "bad"}"><span aria-hidden="true">${ok ? "✓" : "✗"}</span>${esc(text)}</p>`;
+
+/* ---------- status pills ---------- */
+async function loadStatus() {
+  try {
+    const s = await api("GET", "/demo/status");
+    const names = {api: "API", payments: "Payments", database: "Database"};
+    for (const k of Object.keys(names)) {
+      const pill = $(`#pill-${k}`);
+      pill.dataset.state = s[k] ? "up" : "down";
+      pill.lastElementChild.textContent = `${names[k]}: ${s[k] ? "up" : "down"}`;
+    }
+    const down = Object.keys(names).filter((k) => !s[k]).map((k) => names[k]);
+    $("#status-error").innerHTML = down.length
+      ? `<p class="error">${esc(down.join(", "))} not answering. Demos that need it will fail. Run <code>docker compose up -d</code>.</p>` : "";
+  } catch (e) {
+    document.querySelectorAll(".pill").forEach((p) => { p.dataset.state = "down"; });
+    $("#status-error").innerHTML = `<p class="error">${esc(e.message)}</p>`;
+  }
+}
+
+/* ---------- demo 1 ---------- */
+const MODE_NAME = {naive: "Naive", atomic: "Atomic UPDATE", for_update: "SELECT FOR UPDATE"};
+document.querySelectorAll("[data-mode]").forEach((btn) => btn.addEventListener("click", () => {
+  const mode = btn.dataset.mode, box = $(`#r1-${mode}`);
+  running(box, "1000 buyers racing…", async () => {
+    const r = await api("POST", `/demo/oversell?mode=${mode}&buyers=1000&stock=100`);
+    box.innerHTML = `
+      <div class="num" style="color:${r.oversold ? "var(--bad)" : "var(--ok)"}">${fmt(r.sold)} <span style="font-size:1.1rem;color:var(--muted)">/ ${fmt(r.stock_before)}</span><small>items sold / items that existed</small></div>
+      ${r.ok ? verdict(true, "Exact, nothing oversold") : verdict(false, `Oversold by ${fmt(r.oversold)}`)}
+      <p class="stat" style="margin-top:12px"><span class="muted">Left according to the database</span><b>${fmt(r.stock)}</b></p>
+      <p class="stat"><span class="muted">Time for 1000 buyers</span><b>${r.time.toFixed(2)} s</b></p>
+      <p class="note">${r.lost_updates
+        ? `${fmt(r.lost_updates)} sales overwrote each other (a “lost update”), so the database still thinks ${fmt(r.stock)} are left.`
+        : `The other ${fmt(r.buyers - r.sold)} buyers were correctly told “out of stock”.`}</p>`;
+  });
+}));
+
+/* ---------- demo 2 ---------- */
+const CODE_TEXT = {
+  201: "got the first answer (order created / replayed)",
+  409: "“still processing”, sent while the first copy was running",
+  422: "rejected",
+};
+$("#run2").addEventListener("click", () => {
+  const n = $("#repeats").value, box = $("#r2");
+  running(box, `Sending the same order ${n} times…`, async () => {
+    const r = await api("POST", `/demo/replay?repeats=${n}`);
+    const chips = Object.entries(r.answers).map(([c, k]) => `<li><strong>${fmt(k)}×</strong> ${c} ${esc(CODE_TEXT[c] || "")}</li>`).join("");
+    box.innerHTML = `
+      <div class="big">
+        <div class="num">${fmt(r.sent)}<small>requests sent</small></div>
+        <div class="num" style="color:${r.orders === 1 ? "var(--ok)" : "var(--bad)"}">${fmt(r.orders)}<small>orders created</small></div>
+        <div class="num" style="color:${r.charges === 1 ? "var(--ok)" : "var(--bad)"}">${fmt(r.charges)}<small>card charges</small></div>
+        <div class="num">${r.stock_before} → ${r.stock}<small>stock</small></div>
+      </div>
+      ${verdict(r.ok, r.ok ? "One order, one charge, no matter how many clicks" : "Duplicate order or charge!")}
+      <ul class="chips" aria-label="Answers the client got">${chips}
+        <li><strong>${r.other_body_status}</strong> same key with a <em>different</em> order: ${r.other_body_status === 422 ? "rejected, as it should be" : "not rejected!"}</li>
+      </ul>`;
+  });
+});
+
+/* ---------- demo 3 ---------- */
+const COLORS = {PAID: "var(--ok)", FAILED: "var(--bad)", PAYMENT_UNKNOWN: "var(--warn)", PENDING: "var(--muted)", CANCELLED: "var(--muted)"};
+const CHECKS = [
+  ["duplicate_charges", "No customer charged twice", "orders with more than one successful charge"],
+  ["oversell", "Nothing oversold, stock adds up", "products where stock now + sold ≠ starting stock"],
+  ["unknown", "No order left unknown", "orders still PAYMENT_UNKNOWN or PENDING"],
+  ["paid_without_charge", "Every paid order was really charged", "PAID orders without a charge"],
+  ["charged_not_paid", "Nobody charged for an order that isn’t paid", "charges on orders that are not PAID"],
+];
+for (const id of ["fail", "timeout"]) {
+  $(`#${id}`).addEventListener("input", (e) => { $(`#${id}-out`).textContent = `${e.target.value}%`; });
+}
+
+function renderPayments(box, run, s) {
+  const total = Object.values(s.statuses).reduce((a, b) => a + b, 0) || 1;
+  const order = ["PAID", "FAILED", "PAYMENT_UNKNOWN", "PENDING", "CANCELLED"].filter((k) => s.statuses[k]);
+  const outOfStock = run.client_saw.out_of_stock || 0;
+  const gaveUp = run.client_saw.gave_up || 0;
+  const unknownSeen = run.client_saw.PAYMENT_UNKNOWN || 0;
+  box.innerHTML = `
+    <p class="muted">${fmt(run.orders)} orders sent in ${run.seconds} s. ${outOfStock ? `${fmt(outOfStock)} found the product sold out (no order created).` : ""} ${gaveUp ? `${fmt(gaveUp)} clients gave up retrying.` : ""}</p>
+    ${unknownSeen ? `<p class="muted" style="margin-top:4px"><strong>${fmt(unknownSeen)}</strong> customers were first told <span class="badge s-PAYMENT_UNKNOWN">PAYMENT_UNKNOWN</span> because the provider did not answer${s.settled ? "; the reconciler has since found out what really happened to each of them." : "; the reconciler is checking them now."}</p>` : ""}
+    <div class="two">
+      <div>
+        <h3>Order status in the database</h3>
+        <div class="bar" role="img" aria-label="${order.map((k) => `${s.statuses[k]} ${k}`).join(", ")}">
+          ${order.map((k) => `<span style="width:${(100 * s.statuses[k] / total).toFixed(2)}%;background:${COLORS[k]}"></span>`).join("")}
+        </div>
+        <ul class="legend">${order.map((k) => `<li><span class="sw" style="background:${COLORS[k]}"></span><span class="badge s-${k}">${k}</span> <span class="muted">${STATUS_TEXT[k]}</span><b>${fmt(s.statuses[k])}</b></li>`).join("")}</ul>
+      </div>
+      <div>
+        <h3>Guarantees</h3>
+        ${s.settled ? verdict(s.ok, s.ok ? "All checks pass" : "A check failed")
+                    : `<p class="verdict wait"><span class="spinner" aria-hidden="true"></span>Waiting for the reconciler: ${fmt(s.checks.unknown)} unknown</p>`}
+        <ul class="checks" style="margin-top:14px">
+          ${CHECKS.map(([k, title, what]) => {
+            const st = !s.settled ? "wait" : s.checks[k] === 0 ? "ok" : "bad";
+            return `<li data-state="${st}"><span class="mark" aria-hidden="true">${st === "ok" ? "✓" : st === "bad" ? "✗" : "…"}</span>
+              <span>${esc(title)}${st === "wait" ? ' <span class="muted">(checked once settled)</span>' : ""}</span>
+              <small>${esc(what)}: <code>${k}=${s.checks[k]}</code></small></li>`;
+          }).join("")}
+        </ul>
+      </div>
+    </div>`;
+}
+
+$("#run3").addEventListener("click", () => {
+  const fail = $("#fail").value / 100, timeout = $("#timeout").value / 100, n = $("#orders").value, box = $("#r3");
+  running(box, `Placing ${n} orders with a flaky payment provider…`, async () => {
+    const run = await api("POST", `/demo/payments?orders=${n}&fail_rate=${fail}&timeout_rate=${timeout}`);
+    let s = run;
+    renderPayments(box, run, s);
+    const deadline = Date.now() + 120000;
+    while (!s.settled && Date.now() < deadline) {  // the reconciler runs every 5 s
+      await new Promise((ok) => setTimeout(ok, 2000));
+      s = await api("GET", "/demo/payments");
+      renderPayments(box, run, s);
+      loadOrders();
+    }
+    if (!s.settled) box.insertAdjacentHTML("beforeend", `<p class="error">Still not settled after 2 minutes. Is the API (and its reconciler) running?</p>`);
+  });
+});
+
+/* ---------- recent orders ---------- */
+async function loadOrders() {
+  const body = $("#orders-body");
+  try {
+    const rows = await api("GET", "/demo/orders?limit=10");
+    body.innerHTML = rows.length ? rows.map((o) => `<tr>
+        <td>#${o.id}</td>
+        <td><span class="badge s-${esc(o.status)}">${esc(o.status)}</span></td>
+        <td class="items">${esc(o.items)}</td>
+        <td class="num-cell">€${(o.total_cents / 100).toFixed(2)}</td>
+        <td class="hide-sm muted">${new Date(o.created_at).toLocaleTimeString()}</td></tr>`).join("")
+      : `<tr><td colspan="5" class="muted">No orders yet. Run a demo above.</td></tr>`;
+  } catch (e) {
+    body.innerHTML = `<tr><td colspan="5"><span class="error">${esc(e.message)}</span></td></tr>`;
+  }
+}
+
+loadStatus(); loadOrders();
+setInterval(() => { if (!document.hidden) loadStatus(); }, 5000);
+setInterval(() => { if (!document.hidden) loadOrders(); }, 3000);
+</script>
+</body>
+</html>
