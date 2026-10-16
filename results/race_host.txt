@@ -1,0 +1,9 @@
+mode=naive buyers=1000 stock_before=100 sold=1000 stock=81 oversold=900 lost_updates=981 ok_answers=1000 time=48.63s conns=50
+mode=atomic buyers=1000 stock_before=100 sold=100 stock=0 oversold=0 lost_updates=0 ok_answers=100 time=5.45s conns=50
+mode=for_update buyers=1000 stock_before=100 sold=100 stock=0 oversold=0 lost_updates=0 ok_answers=100 time=5.66s conns=50
+mode=naive buyers=1000 stock_before=100 sold=1000 stock=82 oversold=900 lost_updates=982 ok_answers=1000 time=48.70s conns=50
+mode=atomic buyers=1000 stock_before=100 sold=100 stock=0 oversold=0 lost_updates=0 ok_answers=100 time=5.48s conns=50
+mode=for_update buyers=1000 stock_before=100 sold=100 stock=0 oversold=0 lost_updates=0 ok_answers=100 time=5.69s conns=50
+mode=naive buyers=1000 stock_before=100 sold=1000 stock=79 oversold=900 lost_updates=979 ok_answers=1000 time=48.75s conns=50
+mode=atomic buyers=1000 stock_before=100 sold=100 stock=0 oversold=0 lost_updates=0 ok_answers=100 time=5.49s conns=50
+mode=for_update buyers=1000 stock_before=100 sold=100 stock=0 oversold=0 lost_updates=0 ok_answers=100 time=5.64s conns=50

@@ -1,0 +1,14 @@
+k6 2.3.0 (grafana/k6 container, compose network -> http://api:8000), 50 VUs, 30 s, all on product 1000000, FAIL_RATE=0 TIMEOUT_RATE=0.
+Docker Desktop 29.8.2, Windows 11, Ryzen 5 7600X. checks (201 PAID) = 100% in every run.
+run  rps  p50_ms  p99_ms  file
+1    185  252     557     load.json
+2    165  279     645     (stdout only; Git Bash rewrote OUT=/results/... so the file was not saved)
+3    110  414     989     (stdout only; same reason)
+4    103  442     1039    load_run2.json
+5    117  397     936     load_run3.json
+6    129  357     820     load_run6.json   (fresh volume: docker compose down -v)
+7    133  343     789     load_run7.json   (fresh volume, 2nd run)
+8    129  357     830     load_run8.json   (fresh volume, sampled with docker stats)
+median: rps 129, p50 357 ms, p99 825 ms
+During run 8: api container 84% CPU (single uvicorn worker = 1 core), postgres 41%, 10 sessions waiting on Lock/transactionid (hot product row).
+Fresh volume gives the same ~130 rps as a 15k-order DB, so the drop after run 1-2 is host noise, not data growth.

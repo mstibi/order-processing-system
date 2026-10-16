@@ -1,18 +1,24 @@
---- run 1 (FAIL_RATE=0.2 TIMEOUT_RATE=0.1)
-orders=1000 kills=0 seconds=16.2
-client saw: {'PAID': 683, 'FAILED': 172, 'PAYMENT_UNKNOWN': 98, 'out_of_stock': 47}
-orders: {'FAILED': 244, 'PAID': 709} charges_succeeded: 709
+== run 1
+orders=1000 kills=0 seconds=18.7
+client saw: {'PAID': 677, 'FAILED': 203, 'PAYMENT_UNKNOWN': 114, 'out_of_stock': 6}
+waiting for the reconciler: 5 orders still PENDING/PAYMENT_UNKNOWN
+orders: {'FAILED': 285, 'PAID': 709} charges_succeeded: 709
 duplicate_charges=0 oversell=0 unknown=0 paid_without_charge=0 charged_not_paid=0
 INVARIANTS OK
---- run 2 (FAIL_RATE=0.2 TIMEOUT_RATE=0.1)
-orders=1000 kills=0 seconds=14.9
-client saw: {'PAID': 658, 'FAILED': 188, 'PAYMENT_UNKNOWN': 99, 'out_of_stock': 55}
-orders: {'FAILED': 264, 'PAID': 681} charges_succeeded: 681
+exit=0
+== run 2
+orders=1000 kills=0 seconds=18.2
+client saw: {'PAID': 651, 'FAILED': 207, 'PAYMENT_UNKNOWN': 97, 'out_of_stock': 45}
+waiting for the reconciler: 35 orders still PENDING/PAYMENT_UNKNOWN
+orders: {'FAILED': 277, 'PAID': 678} charges_succeeded: 678
 duplicate_charges=0 oversell=0 unknown=0 paid_without_charge=0 charged_not_paid=0
 INVARIANTS OK
---- run 3 (FAIL_RATE=0.2 TIMEOUT_RATE=0.1)
-orders=1000 kills=0 seconds=16.4
-client saw: {'PAID': 675, 'FAILED': 202, 'PAYMENT_UNKNOWN': 94, 'out_of_stock': 29}
-orders: {'FAILED': 273, 'PAID': 698} charges_succeeded: 698
+exit=0
+== run 3
+orders=1000 kills=0 seconds=17.7
+client saw: {'PAID': 666, 'FAILED': 185, 'PAYMENT_UNKNOWN': 113, 'out_of_stock': 36}
+waiting for the reconciler: 14 orders still PENDING/PAYMENT_UNKNOWN
+orders: {'FAILED': 260, 'PAID': 704} charges_succeeded: 704
 duplicate_charges=0 oversell=0 unknown=0 paid_without_charge=0 charged_not_paid=0
 INVARIANTS OK
+exit=0

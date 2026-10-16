@@ -1,21 +1,53 @@
---- run 1 (FAIL_RATE=0.2 TIMEOUT_RATE=0.1, hard kill of the API process every 200 orders)
-orders=1000 kills=4 seconds=30.3
-client saw: {'PAID': 678, 'FAILED': 191, 'gave_up': 56, 'PAYMENT_UNKNOWN': 39, 'out_of_stock': 36}
-orders: {'CANCELLED': 25, 'FAILED': 234, 'PAID': 704} charges_succeeded: 704
+== run 1
+orders=1000 kills=4 seconds=38.6
+client saw: {'PAID': 654, 'FAILED': 183, 'gave_up': 67, 'out_of_stock': 62, 'PAYMENT_UNKNOWN': 34}
+waiting for the reconciler: 79 orders still PENDING/PAYMENT_UNKNOWN
+waiting for the reconciler: 63 orders still PENDING/PAYMENT_UNKNOWN
+waiting for the reconciler: 63 orders still PENDING/PAYMENT_UNKNOWN
+waiting for the reconciler: 63 orders still PENDING/PAYMENT_UNKNOWN
+waiting for the reconciler: 63 orders still PENDING/PAYMENT_UNKNOWN
+waiting for the reconciler: 63 orders still PENDING/PAYMENT_UNKNOWN
+waiting for the reconciler: 46 orders still PENDING/PAYMENT_UNKNOWN
+waiting for the reconciler: 36 orders still PENDING/PAYMENT_UNKNOWN
+waiting for the reconciler: 28 orders still PENDING/PAYMENT_UNKNOWN
+waiting for the reconciler: 12 orders still PENDING/PAYMENT_UNKNOWN
+waiting for the reconciler: 11 orders still PENDING/PAYMENT_UNKNOWN
+orders: {'CANCELLED': 28, 'FAILED': 222, 'PAID': 685} charges_succeeded: 685
 duplicate_charges=0 oversell=0 unknown=0 paid_without_charge=0 charged_not_paid=0
 INVARIANTS OK
-api restarts so far (stack log): 4
---- run 2 (FAIL_RATE=0.2 TIMEOUT_RATE=0.1, hard kill of the API process every 200 orders)
-orders=1000 kills=4 seconds=27.0
-client saw: {'PAID': 652, 'FAILED': 193, 'gave_up': 88, 'out_of_stock': 51, 'PAYMENT_UNKNOWN': 16}
-orders: {'CANCELLED': 44, 'FAILED': 222, 'PAID': 681} charges_succeeded: 681
+exit=0
+== run 2
+orders=1000 kills=4 seconds=36.3
+client saw: {'PAID': 636, 'FAILED': 179, 'out_of_stock': 92, 'gave_up': 48, 'PAYMENT_UNKNOWN': 45}
+waiting for the reconciler: 59 orders still PENDING/PAYMENT_UNKNOWN
+waiting for the reconciler: 48 orders still PENDING/PAYMENT_UNKNOWN
+waiting for the reconciler: 48 orders still PENDING/PAYMENT_UNKNOWN
+waiting for the reconciler: 48 orders still PENDING/PAYMENT_UNKNOWN
+waiting for the reconciler: 48 orders still PENDING/PAYMENT_UNKNOWN
+waiting for the reconciler: 44 orders still PENDING/PAYMENT_UNKNOWN
+waiting for the reconciler: 38 orders still PENDING/PAYMENT_UNKNOWN
+waiting for the reconciler: 27 orders still PENDING/PAYMENT_UNKNOWN
+waiting for the reconciler: 11 orders still PENDING/PAYMENT_UNKNOWN
+waiting for the reconciler: 3 orders still PENDING/PAYMENT_UNKNOWN
+orders: {'CANCELLED': 18, 'FAILED': 223, 'PAID': 667} charges_succeeded: 667
 duplicate_charges=0 oversell=0 unknown=0 paid_without_charge=0 charged_not_paid=0
 INVARIANTS OK
-api restarts so far (stack log): 8
---- run 3 (FAIL_RATE=0.2 TIMEOUT_RATE=0.1, hard kill of the API process every 200 orders)
-orders=1000 kills=4 seconds=25.6
-client saw: {'PAID': 649, 'FAILED': 192, 'out_of_stock': 69, 'gave_up': 68, 'PAYMENT_UNKNOWN': 22}
-orders: {'CANCELLED': 32, 'FAILED': 224, 'PAID': 675} charges_succeeded: 675
+exit=0
+== run 3
+orders=1000 kills=4 seconds=34.9
+client saw: {'PAID': 663, 'FAILED': 191, 'gave_up': 61, 'out_of_stock': 56, 'PAYMENT_UNKNOWN': 29}
+waiting for the reconciler: 67 orders still PENDING/PAYMENT_UNKNOWN
+waiting for the reconciler: 61 orders still PENDING/PAYMENT_UNKNOWN
+waiting for the reconciler: 61 orders still PENDING/PAYMENT_UNKNOWN
+waiting for the reconciler: 61 orders still PENDING/PAYMENT_UNKNOWN
+waiting for the reconciler: 61 orders still PENDING/PAYMENT_UNKNOWN
+waiting for the reconciler: 61 orders still PENDING/PAYMENT_UNKNOWN
+waiting for the reconciler: 53 orders still PENDING/PAYMENT_UNKNOWN
+waiting for the reconciler: 43 orders still PENDING/PAYMENT_UNKNOWN
+waiting for the reconciler: 34 orders still PENDING/PAYMENT_UNKNOWN
+waiting for the reconciler: 24 orders still PENDING/PAYMENT_UNKNOWN
+waiting for the reconciler: 16 orders still PENDING/PAYMENT_UNKNOWN
+orders: {'CANCELLED': 31, 'FAILED': 230, 'PAID': 683} charges_succeeded: 683
 duplicate_charges=0 oversell=0 unknown=0 paid_without_charge=0 charged_not_paid=0
 INVARIANTS OK
-api restarts so far (stack log): 12
+exit=0

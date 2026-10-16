@@ -24,7 +24,10 @@ DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://app:app@localhost:54
 
 
 async def main(mode: str, buyers: int, stock: int, conns: int) -> None:
-    async with AsyncConnectionPool(DATABASE_URL, min_size=conns, max_size=conns, kwargs={"autocommit": True}) as pool:
+    # timeout=600: all buyers queue for `conns` connections at once; the 30 s default is too short
+    # when every round trip goes through Docker Desktop's port forwarding
+    async with AsyncConnectionPool(DATABASE_URL, min_size=conns, max_size=conns, timeout=600,
+                                   kwargs={"autocommit": True}) as pool:
         async with pool.connection() as conn:
             product_id = (await (await conn.execute(
                 "INSERT INTO products (name, price_cents, stock) VALUES (%s, 100, %s) RETURNING id",
