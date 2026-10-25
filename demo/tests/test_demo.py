@@ -64,7 +64,8 @@ def test_payments_declines_only(c):
 
 def test_payments_timeouts_settle_via_reconciler_and_rates_restored(c):
     before = httpx.post(f"{main.PAYMENTS_URL}/config", json={}).json()  # empty body = read only
-    r = c.post("/demo/payments", params={"orders": 5, "fail_rate": 0, "timeout_rate": 1}).json()
+    # 9 orders -> stock 3 per product >= max qty 3, so the first order per product always gets in (5 was flaky: stock 1).
+    r = c.post("/demo/payments", params={"orders": 9, "fail_rate": 0, "timeout_rate": 1}).json()
     assert r["statuses"].get("PAYMENT_UNKNOWN", 0) > 0 or r["statuses"].get("FAILED", 0) > 0
     for _ in range(30):  # reconciler runs every 5 s
         state = c.get("/demo/payments").json()
