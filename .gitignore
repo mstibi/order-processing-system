@@ -5,3 +5,9 @@ __pycache__/
 results/seed.json
 .pgdata/
 .api.pid
+# local planning and tutor notes, not published
+BLUEPRINT.md
+PROGRESS.md
+requests.md
+research.md
+LEARNING.md
