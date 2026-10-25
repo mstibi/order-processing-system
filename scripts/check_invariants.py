@@ -1,4 +1,4 @@
-"""Checks the three rules from the BLUEPRINT against the DB + fake-payments. Exit code 1 if any is broken.
+"""Checks the three invariants (no oversell, no double charge, no unresolved payment) against the DB + fake-payments. Exit code 1 if any is broken.
 
     python scripts/check_invariants.py [--wait 150]
 
